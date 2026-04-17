@@ -1,0 +1,59 @@
+import streamlit as st
+import cv2
+import numpy as np
+from PIL import Image
+
+st.set_page_config(page_title="pH Detector", layout="centered")
+
+st.title("📸 pH Detector from Image")
+
+# ===== ฟังก์ชัน pH =====
+def estimate_ph(r, g, b):
+    try:
+        color = np.uint8([[[int(r), int(g), int(b)]]])
+        hsv = cv2.cvtColor(color, cv2.COLOR_RGB2HSV)
+        hue = hsv[0][0][0]
+
+        if hue < 10:
+            return 2
+        elif hue < 25:
+            return 4
+        elif hue < 35:
+            return 6
+        elif hue < 85:
+            return 7
+        elif hue < 130:
+            return 10
+        else:
+            return 13
+    except:
+        return "Error"
+
+# ===== Upload =====
+uploaded_file = st.file_uploader("📤 Upload image", type=["jpg", "png", "jpeg"])
+
+if uploaded_file:
+    try:
+        image = Image.open(uploaded_file).convert("RGB")
+        img = np.array(image)
+
+        st.image(image, caption="Uploaded Image", use_column_width=True)
+
+        h, w, _ = img.shape
+
+        # กันภาพเล็กเกิน
+        if h < 50 or w < 50:
+            st.warning("Image too small")
+        else:
+            center = img[h//2-20:h//2+20, w//2-20:w//2+20]
+
+            avg_color = center.mean(axis=(0,1))
+            r, g, b = avg_color
+
+            ph = estimate_ph(r, g, b)
+
+            st.success(f"RGB: {int(r)}, {int(g)}, {int(b)}")
+            st.success(f"🧪 Estimated pH: {ph}")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
